@@ -351,10 +351,158 @@ GET /
     "stock_latest": "/stocks/{ticker}",
     "stock_history": "/stocks/{ticker}/history?days=30",
     "stats": "/stats",
-    "search": "/stocks/search/{query}"
+    "search": "/stocks/search/{query}",
+    "indicators": "/stocks/{ticker}/indicators?days=30",
+    "signals": "/stocks/{ticker}/signals?days=30"
   }
 }
 ```
+
+---
+
+### 8. Technical Indicators
+
+Get comprehensive technical indicators for a specific stock.
+
+**Request:**
+```bash
+GET /stocks/{ticker}/indicators?days=30
+```
+
+**Parameters:**
+- `ticker` (path, required) - Stock ticker symbol
+- `days` (query, optional) - Number of days of history (min: 20, max: 365, default: 30)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "ticker": "VCN",
+    "days": 30,
+    "records": 30,
+    "indicators": [
+      {
+        "date": "2025-10-20T00:00:00",
+        "open": 470.0,
+        "high": 471.0,
+        "low": 462.3,
+        "close": 471.0,
+        "volume": 19286358.0,
+        "rsi": 65.32,
+        "macd": 2.45,
+        "macd_signal": 1.89,
+        "macd_histogram": 0.56,
+        "sma_20": 465.8,
+        "sma_50": 460.2,
+        "sma_200": null,
+        "ema_12": 468.5,
+        "ema_26": 466.1,
+        "bb_upper": 475.2,
+        "bb_middle": 465.8,
+        "bb_lower": 456.4,
+        "stoch_k": 78.5,
+        "stoch_d": 72.3
+      }
+      // ... more daily records
+    ]
+  },
+  "timestamp": "2025-10-20T22:30:00.000000+00:00",
+  "ticker": "VCN"
+}
+```
+
+**Calculated Indicators:**
+- **RSI** - Relative Strength Index (14 periods)
+- **MACD** - Moving Average Convergence Divergence (12, 26, 9)
+- **SMA** - Simple Moving Averages (20, 50, 200 days)
+- **EMA** - Exponential Moving Averages (12, 26 days)
+- **Bollinger Bands** - Upper, Middle, Lower (20 days, ±2σ)
+- **Stochastic** - %K and %D (14, 3 periods)
+
+**Status Codes:**
+- `200` - Success
+- `400` - Insufficient data (need at least 20 days)
+- `404` - Ticker not found or no history
+- `500` - Calculation error
+
+**Examples:**
+```bash
+curl "http://localhost:8000/stocks/VCN/indicators?days=50"
+curl "http://localhost:8000/stocks/ATW/indicators?days=30"
+```
+
+---
+
+### 9. Trading Signals
+
+Get automated trading signals based on technical analysis.
+
+**Request:**
+```bash
+GET /stocks/{ticker}/signals?days=30
+```
+
+**Parameters:**
+- `ticker` (path, required) - Stock ticker symbol
+- `days` (query, optional) - Number of days for analysis (min: 20, max: 365, default: 30)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "ticker": "VCN",
+    "current_price": 471.0,
+    "signal": "BUY",
+    "confidence": "MEDIUM",
+    "score": 3,
+    "analysis": [
+      "RSI neutral (40-60) - No clear signal",
+      "MACD above signal - Bullish",
+      "Price above SMA(20) - Bullish",
+      "SMA(20) > SMA(50) - Uptrend"
+    ],
+    "current_indicators": {
+      "rsi": 65.32,
+      "macd": 2.45,
+      "macd_signal": 1.89,
+      "price": 471.0,
+      "sma_20": 465.8,
+      "sma_50": 460.2
+    }
+  },
+  "timestamp": "2025-10-20T22:30:00.000000+00:00",
+  "ticker": "VCN"
+}
+```
+
+**Signal Types:**
+- `STRONG BUY` - High confidence buy signal (score ≥ +5)
+- `BUY` - Medium confidence buy signal (score +2 to +4)
+- `HOLD` - No clear signal (score -2 to +1)
+- `SELL` - Medium confidence sell signal (score -5 to -3)
+- `STRONG SELL` - High confidence sell signal (score ≤ -6)
+
+**Confidence Levels:**
+- `HIGH` - Strong agreement between indicators
+- `MEDIUM` - Moderate agreement
+- `LOW` - Mixed or neutral signals
+
+**Status Codes:**
+- `200` - Success
+- `400` - Insufficient data
+- `404` - Ticker not found or no history
+- `500` - Analysis error
+
+**Examples:**
+```bash
+curl "http://localhost:8000/stocks/VCN/signals"
+curl "http://localhost:8000/stocks/BCP/signals?days=50"
+```
+
+**⚠️ Disclaimer:**
+These signals are for informational purposes only and do not constitute financial advice. Always perform your own research and consult with financial professionals before making investment decisions.
 
 ---
 

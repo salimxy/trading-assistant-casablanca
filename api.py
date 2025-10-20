@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 import pandas as pd
 import numpy as np
 from db import init_db, get_latest, get_history, get_all_stocks
+from indicators import calculate_all_indicators, get_trading_signals
 
 # Configure logging
 logging.basicConfig(
@@ -355,6 +356,144 @@ async def search_stocks(query: str):
         )
 
 
+@app.get("/stocks/{ticker}/indicators", tags=["Technical Analysis"])
+async def get_stock_indicators(
+    ticker: str,
+    days: int = Query(30, ge=20, le=365, description="Number of days of history (minimum 20 for indicators)")
+):
+    """
+    Get technical indicators for a specific stock
+
+    Calculates RSI, MACD, SMA, EMA, Bollinger Bands, and Stochastic Oscillator
+
+    Args:
+        ticker: Stock ticker symbol
+        days: Number of days of history (minimum 20, default: 30)
+
+    Returns:
+        DataFrame with all technical indicators
+
+    Raises:
+        404: Ticker not found or insufficient data
+        400: Invalid days parameter
+    """
+    try:
+        ticker_upper = ticker.upper().strip()
+        logger.info(f"Calculating indicators for {ticker_upper} with {days} days")
+
+        # Get historical data
+        df = get_history(ticker_upper, days=days)
+
+        if df.empty:
+            logger.warning(f"No history found for ticker: {ticker_upper}")
+            raise HTTPException(
+                status_code=404,
+                detail=f"No history found for ticker '{ticker_upper}'"
+            )
+
+        if len(df) < 20:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient data for indicators. Need at least 20 days, got {len(df)}"
+            )
+
+        # Calculate all indicators
+        df_with_indicators = calculate_all_indicators(df)
+
+        # Convert to list of records
+        records = df_with_indicators.to_dict('records')
+
+        # Convert timestamps and handle NaN values
+        for record in records:
+            if 'date' in record and isinstance(record['date'], pd.Timestamp):
+                record['date'] = record['date'].isoformat()
+
+        logger.info(f"Successfully calculated indicators for {ticker_upper}")
+        return success_response({
+            "ticker": ticker_upper,
+            "days": days,
+            "records": len(records),
+            "indicators": records
+        }, ticker=ticker_upper)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error calculating indicators for {ticker}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error calculating indicators: {str(e)}"
+        )
+
+
+@app.get("/stocks/{ticker}/signals", tags=["Technical Analysis"])
+async def get_stock_signals(
+    ticker: str,
+    days: int = Query(30, ge=20, le=365, description="Number of days of history (minimum 20)")
+):
+    """
+    Get trading signals based on technical indicators
+
+    Provides BUY/SELL/HOLD recommendations with confidence levels
+
+    Args:
+        ticker: Stock ticker symbol
+        days: Number of days of history for analysis (default: 30)
+
+    Returns:
+        Trading signal with reasoning and current indicator values
+
+    Raises:
+        404: Ticker not found or insufficient data
+    """
+    try:
+        ticker_upper = ticker.upper().strip()
+        logger.info(f"Generating trading signals for {ticker_upper}")
+
+        # Get historical data
+        df = get_history(ticker_upper, days=days)
+
+        if df.empty:
+            logger.warning(f"No history found for ticker: {ticker_upper}")
+            raise HTTPException(
+                status_code=404,
+                detail=f"No history found for ticker '{ticker_upper}'"
+            )
+
+        if len(df) < 20:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient data for analysis. Need at least 20 days, got {len(df)}"
+            )
+
+        # Calculate indicators
+        df_with_indicators = calculate_all_indicators(df)
+
+        # Generate trading signals
+        signals = get_trading_signals(df_with_indicators)
+
+        # Get latest stock data for context
+        latest_stock = get_latest(ticker_upper)
+
+        logger.info(f"Generated signal '{signals['signal']}' for {ticker_upper}")
+        return success_response({
+            "ticker": ticker_upper,
+            "current_price": latest_stock.get('price') if latest_stock else None,
+            "signal": signals['signal'],
+            "confidence": signals['confidence'],
+            "score": signals['score'],
+            "analysis": signals['indicators'],
+            "current_indicators": signals['latest_values']
+        }, ticker=ticker_upper)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating signals for {ticker}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating signals: {str(e)}"
+        )
+
+
 @app.get("/", tags=["System"])
 async def root():
     """API root endpoint with documentation links"""
@@ -370,7 +509,9 @@ async def root():
             "stock_latest": "/stocks/{ticker}",
             "stock_history": "/stocks/{ticker}/history?days=30",
             "stats": "/stats",
-            "search": "/stocks/search/{query}"
+            "search": "/stocks/search/{query}",
+            "indicators": "/stocks/{ticker}/indicators?days=30",
+            "signals": "/stocks/{ticker}/signals?days=30"
         }
     }
 

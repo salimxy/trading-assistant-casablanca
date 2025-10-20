@@ -6,9 +6,11 @@ Outil d'analyse automatisé pour la Bourse de Casablanca avec scraping temps ré
 
 - ✅ Scraping API Next.js (60/73 tickers accessibles)
 - ✅ Base SQLite avec historiques
-- ✅ API REST FastAPI (8 endpoints)
+- ✅ API REST FastAPI (10 endpoints)
 - ✅ Tests automatisés complets
 - ✅ Documentation Swagger complète
+- ✅ Indicateurs techniques (RSI, MACD, SMA, EMA, Bollinger, Stochastic)
+- ✅ Signaux de trading automatiques (BUY/SELL/HOLD)
 - ⏳ Dashboard React (à venir)
 - ⏳ Système de scoring (à venir)
 - ⏳ Job automatique collecte (à venir)
@@ -51,12 +53,14 @@ trading-assistant-ma/
 ├── Core Scripts
 │   ├── scraper.py              # Scraper API Bourse Casa
 │   ├── db.py                   # ORM SQLAlchemy + SQLite
-│   └── api.py                  # API REST FastAPI
+│   ├── api.py                  # API REST FastAPI
+│   └── indicators.py           # Indicateurs techniques
 │
 ├── Testing
 │   ├── test_all_tickers.py     # Test 73 tickers (60 OK)
 │   ├── test_db.py              # Tests DB fonctionnalité
 │   ├── test_api.py             # Tests API endpoints
+│   ├── test_indicators.py      # Tests indicateurs techniques
 │   └── debug_api.py            # Debugging
 │
 ├── Data
@@ -92,7 +96,7 @@ AFMA, AGMA, AKDITAL, BMCI, LAB, MED, PAP, SAL, SCE, SNE, STK, TGCC, TIM
 
 **Liste**: `failed_tickers.txt`
 
-## 📡 API REST - 8 Endpoints
+## 📡 API REST - 10 Endpoints
 
 ### 1. Health Check
 ```bash
@@ -133,7 +137,31 @@ GET /stocks/search/{query}
 ```
 Recherche par ticker ou nom entreprise
 
-### 7. Documentation Interactive
+### 7. Indicateurs Techniques 📊
+```bash
+GET /stocks/{ticker}/indicators?days=30
+# Exemple: GET /stocks/VCN/indicators?days=50
+```
+Calcul complet des indicateurs techniques :
+- RSI (Relative Strength Index)
+- MACD (Moving Average Convergence Divergence)
+- SMA (Simple Moving Average - 20, 50, 200 jours)
+- EMA (Exponential Moving Average - 12, 26 jours)
+- Bollinger Bands (Bandes de Bollinger)
+- Stochastic Oscillator (Oscillateur Stochastique)
+
+### 8. Signaux de Trading 🎯
+```bash
+GET /stocks/{ticker}/signals?days=30
+# Exemple: GET /stocks/VCN/signals
+```
+Signaux de trading automatiques basés sur l'analyse technique :
+- **STRONG BUY** / **BUY** / **HOLD** / **SELL** / **STRONG SELL**
+- Niveau de confiance (HIGH / MEDIUM / LOW)
+- Score composite basé sur tous les indicateurs
+- Analyse détaillée de chaque indicateur
+
+### 9. Documentation Interactive
 ```
 GET /docs      (Swagger UI)
 GET /redoc     (ReDoc alternative)
@@ -204,7 +232,7 @@ git push origin feature/dashboard
 - [x] ✅ Étape 2: Base SQLite
 - [x] ✅ Étape 3: API REST
 - [x] ✅ Étape 4: Tests
-- [ ] Étape 5: Indicateurs techniques (RSI, MACD, MA)
+- [x] ✅ Étape 5: Indicateurs techniques (RSI, MACD, MA, Bollinger, Stochastic)
 - [ ] Étape 6: Système de scoring
 - [ ] Étape 7: Job automatique (cron/scheduler)
 - [ ] Étape 8: Dashboard React
