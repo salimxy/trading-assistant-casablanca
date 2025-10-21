@@ -481,10 +481,12 @@ curl http://localhost:8000/stocks/search/BANK
 
 ---
 
-## Available Stocks (60 total)
+## Available Stocks (60 validated tickers)
 
-### Working Tickers
-ADH, ADI, AFM, AKT, ALM, ARD, ATL, ATW, BAL, BCI, BCP, BOA, CDM, CIH, CMA, CMT, COL, CRS, CSR, CTM, DIS, DHO, DLM, DWY, EQD, FBR, HPS, IBC, JET, LBV, LES, M2M, MIC, MLE, MUT, NEJ, OUL, PRO, RDS, REB, RIS, SAH, SBM, SID, SMI, SNA, SNP, SOT, SRM, STR, TGC, TMA, TQM, UMR, VCN, WAA, ZDJ, CMA
+### Validated Tickers
+ADH, ADI, AFM, AKT, ALM, ARD, ATL, ATW, BAL, BCI, BCP, BOA, CDM, CIH, CMA, CMT, COL, CRS, CSR, CTM, DIS, DHO, DLM, DWY, EQD, FBR, GAZ, HPS, IAM, IBC, JET, LBV, LES, M2M, MIC, MLE, MNG, MUT, NEJ, OUL, PRO, RDS, REB, RIS, SAH, SBM, SID, SMI, SNA, SNP, SOT, SRM, STR, TGC, TMA, TQM, UMR, VCN, WAA, ZDJ
+
+**Note**: Only validated tickers from `constants.py` are available to ensure optimal performance.
 
 ---
 
@@ -525,6 +527,8 @@ docker run -p 8000:8000 -v /path/to/stocks.db:/app/stocks.db \
 
 ## Files
 
+- `constants.py` - Configuration and validated tickers
+- `scraper.py` - Web scraper with API monitoring
 - `api.py` - FastAPI application and endpoints
 - `db.py` - SQLAlchemy database models and functions
 - `stocks.db` - SQLite database
@@ -532,14 +536,28 @@ docker run -p 8000:8000 -v /path/to/stocks.db:/app/stocks.db \
 
 ---
 
+## API Monitoring
+
+The scraper includes automatic monitoring for:
+- **Build ID changes**: Detects when Next.js build ID changes
+- **API structure changes**: Validates response structure
+- **Critical alerts**: Logs warnings when updates needed
+
+If API changes are detected, check logs for update instructions.
+
+---
+
 ## Support
 
 For issues or questions, check:
 1. API logs for detailed error messages
-2. Swagger UI at `/docs` for interactive testing
-3. Database integrity with `test_db.py`
+2. Scraper logs for API monitoring alerts
+3. Swagger UI at `/docs` for interactive testing
+4. Database integrity with `test_db.py`
+5. Update `CURRENT_BUILD_ID` in `constants.py` if build ID changes
 
 ---
 
-**API Version**: 1.0.0
-**Last Updated**: 2025-10-20
+**API Version**: 1.0.1
+**Last Updated**: 2025-10-21
+**Monitoring**: ✅ Active

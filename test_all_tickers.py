@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Test all Casablanca Stock Exchange tickers"""
+"""
+Populate database with validated Casablanca Stock Exchange tickers.
+
+This script uses only the pre-validated working tickers from constants.py
+to avoid wasting time on known-failed tickers.
+"""
 
 import time
 import logging
@@ -8,6 +13,7 @@ from typing import Tuple, Optional, Dict, Any
 from tqdm import tqdm
 from scraper import get_stock_data
 from db import init_db, save_stock, save_history
+from constants import WORKING_TICKERS, REQUEST_DELAY_SECONDS
 
 # Configure logging
 logging.basicConfig(
@@ -20,29 +26,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Complete list of Casablanca Stock Exchange tickers
-TICKERS = [
-    'ATW', 'BCP', 'IAM', 'CIH', 'CDM', 'BCI', 'BOA', 'GAZ', 'MNG', 'ADH',
-    'ALM', 'AFM', 'AFMA', 'AGMA', 'AKT', 'ATL', 'ADI', 'ARD', 'BAL', 'BCP',
-    'CIH', 'CMT', 'COL', 'CRS', 'CSR', 'CTM', 'DIS', 'DHO', 'DLM', 'DWY',
-    'EQD', 'FBR', 'HPS', 'IBC', 'JET', 'LAB', 'LBV', 'LES', 'M2M', 'MED',
-    'MIC', 'MLE', 'MUT', 'NEJ', 'OUL', 'PAP', 'PRO', 'RDS', 'REB', 'RIS',
-    'SAH', 'SAL', 'SBM', 'SCE', 'SID', 'SMI', 'SNA', 'SNE', 'SNP', 'SOT',
-    'SRM', 'STK', 'STR', 'TGC', 'TIM', 'TMA', 'TQM', 'UMR', 'VCN', 'WAA',
-    'ZDJ', 'AKDITAL', 'TGCC', 'BMCI', 'CMA'
-]
-
-# Remove duplicates while preserving order
-TICKERS = list(dict.fromkeys(TICKERS))
+# Use only validated working tickers
+TICKERS = WORKING_TICKERS
 
 
-def test_ticker(ticker: str, delay: float = 2.0) -> Tuple[str, bool, Optional[Dict[str, Any]]]:
+def test_ticker(ticker: str, delay: float = REQUEST_DELAY_SECONDS) -> Tuple[str, bool, Optional[Dict[str, Any]]]:
     """
     Test if a ticker is accessible.
 
     Args:
         ticker: Stock ticker
-        delay: Delay before request (seconds)
+        delay: Delay before request (seconds, default from constants)
 
     Returns:
         Tuple of (ticker, success, data_or_error_message)
@@ -75,10 +69,11 @@ def test_all(save_to_db: bool = False) -> Tuple[int, int, list, list]:
     failed_tickers = []
 
     print("\n" + "=" * 80)
-    print("TESTING ALL CASABLANCA STOCK EXCHANGE TICKERS")
+    print("POPULATING DATABASE WITH VALIDATED TICKERS")
     print("=" * 80 + "\n")
 
-    print(f"Total tickers to test: {len(TICKERS)}\n")
+    print(f"Total validated tickers: {len(TICKERS)}")
+    print(f"Note: Only testing pre-validated working tickers from constants.py\n")
 
     with tqdm(total=len(TICKERS), desc="Testing tickers", unit="ticker") as pbar:
         for i, ticker in enumerate(TICKERS):
@@ -136,12 +131,12 @@ def save_failed_tickers(tickers: list) -> None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Test all Casablanca Stock Exchange tickers'
+        description='Populate database with validated Casablanca Stock Exchange tickers'
     )
     parser.add_argument(
         '--save',
         action='store_true',
-        help='Save working tickers to database'
+        help='Save tickers to database (required for first-time setup)'
     )
     args = parser.parse_args()
 

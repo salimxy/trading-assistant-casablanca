@@ -4,7 +4,8 @@ Outil d'analyse automatisé pour la Bourse de Casablanca avec scraping temps ré
 
 ## 🎯 Fonctionnalités
 
-- ✅ Scraping API Next.js (60/73 tickers accessibles)
+- ✅ Scraping API Next.js (60 tickers validés)
+- ✅ Surveillance API automatique (détection changements)
 - ✅ Base SQLite avec historiques
 - ✅ API REST FastAPI (8 endpoints)
 - ✅ Tests automatisés complets
@@ -47,22 +48,21 @@ open http://localhost:8000/docs
 ## 📁 Architecture Projet
 
 ```
-trading-assistant-ma/
+trading-assistant-casablanca/
 ├── Core Scripts
-│   ├── scraper.py              # Scraper API Bourse Casa
+│   ├── constants.py            # Configuration & tickers validés
+│   ├── scraper.py              # Scraper avec monitoring API
 │   ├── db.py                   # ORM SQLAlchemy + SQLite
 │   └── api.py                  # API REST FastAPI
 │
 ├── Testing
-│   ├── test_all_tickers.py     # Test 73 tickers (60 OK)
+│   ├── test_all_tickers.py     # Population DB (60 tickers)
 │   ├── test_db.py              # Tests DB fonctionnalité
-│   ├── test_api.py             # Tests API endpoints
-│   └── debug_api.py            # Debugging
+│   └── test_api.py             # Tests API endpoints
 │
 ├── Data
 │   ├── stocks.db               # Base SQLite (gitignored)
-│   ├── working_tickers.txt     # 60 tickers accessibles
-│   └── failed_tickers.txt      # 13 tickers indisponibles
+│   └── working_tickers.txt     # Liste tickers (référence)
 │
 └── Docs
     ├── API_DOCUMENTATION.md    # API complète
@@ -73,24 +73,20 @@ trading-assistant-ma/
 
 ## 🎯 Tickers Disponibles
 
-**60/73 tickers accessibles (82.2%)**
+**60 tickers validés et opérationnels**
 
 ### Secteurs Couverts:
-- 🏦 **Banques**: ATW (Attijariwafa), BOA (Bank of Africa), BCI (BMCI), CIH
+- 🏦 **Banques**: ATW (Attijariwafa), BOA (Bank of Africa), BCI, CIH
 - 📱 **Telecom**: IAM (Maroc Telecom)
 - 🏢 **Immobilier**: CIH, CDM
 - 🏭 **Industrie**: ALM (Aluminium du Maroc), CTM
-- 🏥 **Santé**: VCN (Vicenne), AKT (Akdital)
-- ⚡ **Énergie**: GAZ, TGCC
-- 🍷 **Agro-alimentaire**: SNP, MED
+- 🏥 **Santé**: VCN (Vicenne), AKT
+- ⚡ **Énergie**: GAZ, TGC
+- 🍷 **Agro-alimentaire**: SNP
 - Et 50+ autres
 
-**Liste complète**: `working_tickers.txt`
-
-### Tickers Indisponibles (13):
-AFMA, AGMA, AKDITAL, BMCI, LAB, MED, PAP, SAL, SCE, SNE, STK, TGCC, TIM
-
-**Liste**: `failed_tickers.txt`
+**Liste complète**: Voir `constants.py` (WORKING_TICKERS)
+**Note**: Seuls les tickers validés sont utilisés pour optimiser les performances
 
 ## 📡 API REST - 8 Endpoints
 
@@ -260,7 +256,8 @@ Casablanca, Maroc
 
 ---
 
-**Status**: ✅ Production Ready
-**Version**: 1.0.0
-**Last Update**: 20 Octobre 2025
-**Stocks**: 60/73 (82.2%)
+**Status**: ✅ Production Ready (avec monitoring API)
+**Version**: 1.0.1
+**Last Update**: 21 Octobre 2025
+**Tickers**: 60 validés
+**API Monitoring**: ✅ Actif (build ID + structure)
