@@ -7,11 +7,13 @@ Outil d'analyse automatisé pour la Bourse de Casablanca avec scraping temps ré
 - ✅ Scraping API Next.js (60 tickers validés)
 - ✅ Surveillance API automatique (détection changements)
 - ✅ Base SQLite avec historiques
-- ✅ API REST FastAPI (8 endpoints)
+- ✅ API REST FastAPI (9 endpoints)
+- ✅ **Indicateurs techniques** (RSI, MACD, SMA, tendances)
+- ✅ **Système de scoring et recommandations** (0-100)
+- ✅ **Signaux d'achat/vente automatiques** (STRONG BUY → STRONG SELL)
 - ✅ Tests automatisés complets
 - ✅ Documentation Swagger complète
 - ⏳ Dashboard React (à venir)
-- ⏳ Système de scoring (à venir)
 - ⏳ Job automatique collecte (à venir)
 
 ## 🚀 Quick Start
@@ -53,12 +55,15 @@ trading-assistant-casablanca/
 │   ├── constants.py            # Configuration & tickers validés
 │   ├── scraper.py              # Scraper avec monitoring API
 │   ├── db.py                   # ORM SQLAlchemy + SQLite
-│   └── api.py                  # API REST FastAPI
+│   ├── api.py                  # API REST FastAPI
+│   ├── indicators.py           # Indicateurs techniques (RSI, MACD, SMA)
+│   └── scoring.py              # Système de scoring & recommandations
 │
 ├── Testing
 │   ├── test_all_tickers.py     # Population DB (60 tickers)
 │   ├── test_db.py              # Tests DB fonctionnalité
-│   └── test_api.py             # Tests API endpoints
+│   ├── test_api.py             # Tests API endpoints
+│   └── test_scoring.py         # Tests scoring system
 │
 ├── Data
 │   ├── stocks.db               # Base SQLite (gitignored)
@@ -88,7 +93,31 @@ trading-assistant-casablanca/
 **Liste complète**: Voir `constants.py` (WORKING_TICKERS)
 **Note**: Seuls les tickers validés sont utilisés pour optimiser les performances
 
-## 📡 API REST - 8 Endpoints
+## 📊 Système de Scoring
+
+**Score technique (0-100) basé sur:**
+- RSI optimal 40-60: +30pts
+- MACD positif: +20pts
+- Prix > SMA_20: +20pts
+- Volume > moyenne: +15pts
+- Tendance haussière: +15pts
+
+**Signaux générés:**
+- 80-100: **STRONG BUY** 🟢
+- 60-79: **BUY** 🟢
+- 40-59: **HOLD** 🟡
+- 20-39: **SELL** 🔴
+- 0-19: **STRONG SELL** 🔴
+
+```bash
+# Obtenir signaux pour VCN
+curl http://localhost:8000/stocks/VCN/signals
+
+# Avec période personnalisée (7-90 jours)
+curl "http://localhost:8000/stocks/VCN/signals?days=60"
+```
+
+## 📡 API REST - 9 Endpoints
 
 ### 1. Health Check
 ```bash
@@ -169,6 +198,8 @@ id | ticker | date | open | high | low | close | volume
 | Database | SQLite (MVP) / PostgreSQL (prod) |
 | ORM | SQLAlchemy 2.0 |
 | Scraping | Requests + Retry logic |
+| Analyse technique | Pandas + NumPy |
+| Indicateurs | RSI, MACD, SMA, EMA |
 | Testing | pytest (à ajouter) |
 | Documentation | Swagger/OpenAPI |
 
@@ -200,8 +231,8 @@ git push origin feature/dashboard
 - [x] ✅ Étape 2: Base SQLite
 - [x] ✅ Étape 3: API REST
 - [x] ✅ Étape 4: Tests
-- [ ] Étape 5: Indicateurs techniques (RSI, MACD, MA)
-- [ ] Étape 6: Système de scoring
+- [x] ✅ **Étape 5: Indicateurs techniques (RSI, MACD, MA)**
+- [x] ✅ **Étape 6: Système de scoring**
 - [ ] Étape 7: Job automatique (cron/scheduler)
 - [ ] Étape 8: Dashboard React
 - [ ] Étape 9: Intégration Telegram bot
@@ -236,6 +267,9 @@ python3 test_all_tickers.py --save
 
 # Test API
 python3 test_api.py
+
+# Test scoring system (avec données mock)
+python3 test_scoring.py
 ```
 
 ## 📞 Support
@@ -256,8 +290,10 @@ Casablanca, Maroc
 
 ---
 
-**Status**: ✅ Production Ready (avec monitoring API)
-**Version**: 1.0.1
+**Status**: ✅ Production Ready (avec monitoring API + scoring)
+**Version**: 1.1.0
 **Last Update**: 21 Octobre 2025
 **Tickers**: 60 validés
+**Endpoints**: 9 (+ signaux d'achat/vente)
 **API Monitoring**: ✅ Actif (build ID + structure)
+**Scoring System**: ✅ Actif (RSI, MACD, SMA, tendances)
