@@ -11,9 +11,10 @@ Outil d'analyse automatisé pour la Bourse de Casablanca avec scraping temps ré
 - ✅ **Indicateurs techniques** (RSI, MACD, SMA, tendances)
 - ✅ **Système de scoring et recommandations** (0-100)
 - ✅ **Signaux d'achat/vente automatiques** (STRONG BUY → STRONG SELL)
+- ✅ **Dashboard web interactif** (Streamlit)
+- ✅ **Graphiques techniques** (Candlestick, Volume, Indicateurs)
 - ✅ Tests automatisés complets
 - ✅ Documentation Swagger complète
-- ⏳ Dashboard React (à venir)
 - ⏳ Job automatique collecte (à venir)
 
 ## 🚀 Quick Start
@@ -30,21 +31,41 @@ pip install fastapi uvicorn sqlalchemy requests pandas tqdm pytz
 
 ### Utilisation
 
+#### Option 1: Dashboard Web Interactif (Recommandé)
 ```bash
-# 1. Tester scraper sur 3 actions
-python3 scraper.py
+# 1. Créer données de test
+python3 test_scoring.py
 
-# 2. Peupler DB avec tous les tickers (60 accessibles)
+# 2. Lancer le dashboard
+./run_dashboard.sh
+# Ou: streamlit run app.py
+
+# 3. Accéder au dashboard
+open http://localhost:8501
+```
+
+#### Option 2: API REST
+```bash
+# 1. Peupler DB avec tous les tickers
 python3 test_all_tickers.py --save
 
-# 3. Tester la base de données
-python3 test_db.py
-
-# 4. Lancer l'API
+# 2. Lancer l'API
 uvicorn api:app --reload --port 8000
 
-# 5. Accéder à Swagger
+# 3. Accéder à Swagger
 open http://localhost:8000/docs
+```
+
+#### Option 3: Scripts CLI
+```bash
+# Tester scraper sur 3 actions
+python3 scraper.py
+
+# Tester la base de données
+python3 test_db.py
+
+# Tester le scoring
+python3 test_scoring.py
 ```
 
 ## 📁 Architecture Projet
@@ -57,13 +78,18 @@ trading-assistant-casablanca/
 │   ├── db.py                   # ORM SQLAlchemy + SQLite
 │   ├── api.py                  # API REST FastAPI
 │   ├── indicators.py           # Indicateurs techniques (RSI, MACD, SMA)
-│   └── scoring.py              # Système de scoring & recommandations
+│   ├── scoring.py              # Système de scoring & recommandations
+│   └── app.py                  # Dashboard Streamlit (MVP Interface)
 │
 ├── Testing
 │   ├── test_all_tickers.py     # Population DB (60 tickers)
 │   ├── test_db.py              # Tests DB fonctionnalité
 │   ├── test_api.py             # Tests API endpoints
 │   └── test_scoring.py         # Tests scoring system
+│
+├── Scripts
+│   ├── diagnose_api_403.py     # Diagnostic API 403
+│   └── run_dashboard.sh        # Script lancement dashboard
 │
 ├── Data
 │   ├── stocks.db               # Base SQLite (gitignored)
@@ -72,6 +98,7 @@ trading-assistant-casablanca/
 └── Docs
     ├── API_DOCUMENTATION.md    # API complète
     ├── PROJECT_OVERVIEW.md     # Vue d'ensemble
+    ├── DASHBOARD_GUIDE.md      # Guide dashboard
     ├── requirements.txt
     └── README.md
 ```
@@ -116,6 +143,62 @@ curl http://localhost:8000/stocks/VCN/signals
 # Avec période personnalisée (7-90 jours)
 curl "http://localhost:8000/stocks/VCN/signals?days=60"
 ```
+
+## 🖥️ Dashboard Web Interactif
+
+**Interface utilisateur complète avec Streamlit**
+
+### Fonctionnalités du Dashboard
+
+**🏠 Vue d'ensemble du marché:**
+- Statistiques globales (nombre d'actions, variation moyenne, volume total)
+- Top 5 gagnants et perdants du jour
+- Tableau complet de toutes les actions
+
+**🔍 Analyse technique détaillée:**
+- Sélection d'action interactive
+- Score technique (0-100) avec niveau de confiance
+- Signal de trading (STRONG BUY → STRONG SELL)
+- Graphiques interactifs:
+  - Candlestick avec SMA
+  - Volume d'échanges
+- Indicateurs techniques en temps réel
+- Justifications détaillées des recommandations
+
+**📊 Graphiques interactifs (Plotly):**
+- Zoom et pan
+- Tooltips informatifs
+- Export d'images
+- Responsive design
+
+### Lancement
+
+```bash
+# Méthode 1: Script automatique
+./run_dashboard.sh
+
+# Méthode 2: Commande directe
+streamlit run app.py
+
+# Accès: http://localhost:8501
+```
+
+### Captures d'écran
+
+**Page d'accueil:**
+- Métriques clés du marché
+- Top movers
+- Vue tableau complète
+
+**Page d'analyse:**
+- Signal de trading proéminent
+- 4 métriques principales
+- 2 graphiques interactifs
+- Indicateurs détaillés
+- Score breakdown
+- Justifications
+
+📖 **Guide complet:** Voir `DASHBOARD_GUIDE.md`
 
 ## 📡 API REST - 9 Endpoints
 
@@ -200,12 +283,15 @@ id | ticker | date | open | high | low | close | volume
 | Scraping | Requests + Retry logic |
 | Analyse technique | Pandas + NumPy |
 | Indicateurs | RSI, MACD, SMA, EMA |
+| Interface | Streamlit + Plotly |
 | Testing | pytest (à ajouter) |
 | Documentation | Swagger/OpenAPI |
 
 ## 📖 Documentation Détaillée
 
 Consultez les fichiers complets:
+- **README.md** - Vue d'ensemble et quick start (ce fichier)
+- **DASHBOARD_GUIDE.md** - Guide complet du dashboard
 - **API_DOCUMENTATION.md** - Référence API complète
 - **PROJECT_OVERVIEW.md** - Architecture & détails techniques
 
@@ -233,10 +319,11 @@ git push origin feature/dashboard
 - [x] ✅ Étape 4: Tests
 - [x] ✅ **Étape 5: Indicateurs techniques (RSI, MACD, MA)**
 - [x] ✅ **Étape 6: Système de scoring**
-- [ ] Étape 7: Job automatique (cron/scheduler)
-- [ ] Étape 8: Dashboard React
-- [ ] Étape 9: Intégration Telegram bot
-- [ ] Étape 10: Déploiement production
+- [x] ✅ **Étape 7: Dashboard web interactif (Streamlit MVP)**
+- [ ] Étape 8: Job automatique collecte (cron/scheduler)
+- [ ] Étape 9: Dashboard React (migration)
+- [ ] Étape 10: Intégration Telegram bot
+- [ ] Étape 11: Déploiement production
 
 ## 🚀 Déploiement
 
@@ -290,10 +377,12 @@ Casablanca, Maroc
 
 ---
 
-**Status**: ✅ Production Ready (avec monitoring API + scoring)
-**Version**: 1.1.0
+**Status**: ✅ MVP Ready (Full-Stack avec Interface)
+**Version**: 1.2.0
 **Last Update**: 21 Octobre 2025
 **Tickers**: 60 validés
 **Endpoints**: 9 (+ signaux d'achat/vente)
+**Dashboard**: ✅ Streamlit MVP (graphiques interactifs)
 **API Monitoring**: ✅ Actif (build ID + structure)
 **Scoring System**: ✅ Actif (RSI, MACD, SMA, tendances)
+**Progress**: 7/11 étapes complétées (64%)
