@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 import pandas as pd
 import numpy as np
 from db import init_db, get_latest, get_history, get_all_stocks
+from scoring import analyze_stock
 
 # Configure logging
 logging.basicConfig(
@@ -355,6 +356,55 @@ async def search_stocks(query: str):
         )
 
 
+@app.get("/stocks/{ticker}/signals", tags=["Analytics"])
+async def get_stock_signals(
+    ticker: str,
+    days: int = Query(30, ge=7, le=90, description="Number of days for analysis (7-90)")
+):
+    """
+    Get trading signals and recommendations for a stock.
+
+    Analyzes technical indicators and generates buy/sell signals.
+
+    Args:
+        ticker: Stock ticker symbol
+        days: Number of days for historical analysis (default: 30)
+
+    Returns:
+        Technical analysis with score, signal, and recommendations
+
+    Raises:
+        404: Ticker not found or insufficient data
+        500: Analysis error
+    """
+    try:
+        ticker_upper = ticker.upper().strip()
+        logger.info(f"Generating signals for {ticker_upper} with {days} days")
+
+        # Analyze stock
+        analysis = analyze_stock(ticker_upper, days=days)
+
+        if not analysis:
+            logger.warning(f"Could not analyze {ticker_upper} - insufficient data")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Insufficient data to analyze '{ticker_upper}'. Need at least 30 days of historical data."
+            )
+
+        logger.info(f"Generated signal for {ticker_upper}: {analysis['signal']} (score: {analysis['score']})")
+
+        return success_response(analysis, ticker=ticker_upper)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating signals for {ticker}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Analysis error"
+        )
+
+
 @app.get("/", tags=["System"])
 async def root():
     """API root endpoint with documentation links"""
@@ -370,7 +420,8 @@ async def root():
             "stock_latest": "/stocks/{ticker}",
             "stock_history": "/stocks/{ticker}/history?days=30",
             "stats": "/stats",
-            "search": "/stocks/search/{query}"
+            "search": "/stocks/search/{query}",
+            "signals": "/stocks/{ticker}/signals?days=30"
         }
     }
 

@@ -3,6 +3,14 @@ import logging
 import time
 import urllib3
 from typing import Optional, Dict, Any
+from constants import (
+    CURRENT_BUILD_ID,
+    REQUEST_DELAY_SECONDS,
+    MAX_RETRIES,
+    RETRY_BACKOFF_BASE,
+    REQUEST_TIMEOUT,
+    VERIFY_SSL
+)
 
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -13,6 +21,61 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# API monitoring
+class APIMonitor:
+    """Monitor API changes and potential issues"""
+
+    @staticmethod
+    def check_api_structure(data: dict, ticker: str) -> bool:
+        """
+        Validate API response structure to detect breaking changes.
+
+        Returns:
+            True if structure is valid, False otherwise
+        """
+        try:
+            # Check for expected top-level keys
+            if 'pageProps' not in data:
+                logger.error(f"API structure changed: 'pageProps' missing for {ticker}")
+                return False
+
+            if 'node' not in data['pageProps']:
+                logger.error(f"API structure changed: 'node' missing for {ticker}")
+                return False
+
+            # Check for expected nested structure
+            node = data['pageProps']['node']
+            if 'field_vactory_paragraphs' not in node:
+                logger.error(f"API structure changed: 'field_vactory_paragraphs' missing for {ticker}")
+                return False
+
+            return True
+        except Exception as e:
+            logger.error(f"API structure validation error for {ticker}: {e}")
+            return False
+
+    @staticmethod
+    def detect_build_id_change(response_url: str) -> Optional[str]:
+        """
+        Detect if build ID has changed by inspecting response.
+
+        Returns:
+            New build ID if detected, None otherwise
+        """
+        try:
+            # Build ID is in the URL path
+            if '/_next/data/' in response_url:
+                parts = response_url.split('/_next/data/')
+                if len(parts) > 1:
+                    build_id = parts[1].split('/')[0]
+                    if build_id != CURRENT_BUILD_ID:
+                        logger.warning(f"Build ID changed! Old: {CURRENT_BUILD_ID}, New: {build_id}")
+                        return build_id
+        except Exception as e:
+            logger.debug(f"Build ID detection error: {e}")
+
+        return None
 
 
 def get_stock_data(ticker: str) -> Optional[Dict[str, Any]]:
@@ -25,32 +88,34 @@ def get_stock_data(ticker: str) -> Optional[Dict[str, Any]]:
     Returns:
         Dictionary with stock data or None if error occurs
     """
-    base_url = f"https://www.casablanca-bourse.com/_next/data/uwlP8zo7fj-u9phPebGR5/fr/live-market/instruments/{ticker}.json"
+    base_url = f"https://www.casablanca-bourse.com/_next/data/{CURRENT_BUILD_ID}/fr/live-market/instruments/{ticker}.json"
     params = {
         'slug': ['live-market', 'instruments', ticker]
     }
 
-    max_retries = 3
-    retry_delay = 1  # Initial delay in seconds
-
-    for attempt in range(max_retries):
+    for attempt in range(MAX_RETRIES):
         try:
-            logger.info(f"Fetching data for {ticker} (attempt {attempt + 1}/{max_retries})")
+            logger.info(f"Fetching data for {ticker} (attempt {attempt + 1}/{MAX_RETRIES})")
 
-            response = requests.get(base_url, params=params, timeout=10, verify=False)
+            response = requests.get(base_url, params=params, timeout=REQUEST_TIMEOUT, verify=VERIFY_SSL)
+
+            # Monitor for build ID changes
+            new_build_id = APIMonitor.detect_build_id_change(response.url)
+            if new_build_id:
+                logger.critical(f"⚠️  API BUILD ID CHANGED! Update CURRENT_BUILD_ID in constants.py to: {new_build_id}")
+
+            response.raise_for_status()
 
             # Handle 404 - invalid ticker
             if response.status_code == 404:
                 logger.error(f"Ticker '{ticker}' not found (404)")
                 return None
 
-            response.raise_for_status()
-
             data = response.json()
 
-            # Extract data from pageProps.node
-            if 'pageProps' not in data or 'node' not in data['pageProps']:
-                logger.error(f"Unexpected JSON structure for {ticker}")
+            # Validate API structure
+            if not APIMonitor.check_api_structure(data, ticker):
+                logger.critical(f"⚠️  API STRUCTURE CHANGED for {ticker}! Review API response format.")
                 return None
 
             node = data['pageProps']['node']
@@ -117,12 +182,12 @@ def get_stock_data(ticker: str) -> Optional[Dict[str, Any]]:
             return None
 
         # Exponential backoff if not the last attempt
-        if attempt < max_retries - 1:
-            sleep_time = retry_delay * (2 ** attempt)
+        if attempt < MAX_RETRIES - 1:
+            sleep_time = RETRY_BACKOFF_BASE * (2 ** attempt)
             logger.info(f"Retrying in {sleep_time} seconds...")
             time.sleep(sleep_time)
 
-    logger.error(f"Failed to fetch data for {ticker} after {max_retries} attempts")
+    logger.error(f"Failed to fetch data for {ticker} after {MAX_RETRIES} attempts")
     return None
 
 
@@ -162,11 +227,15 @@ def format_stock_data(stock_data: Dict[str, Any]) -> str:
 
 
 def main():
-    """Test the scraper with specified tickers."""
-    tickers = ['VCN', 'ATW', 'BCP']
+    """Test the scraper with sample tickers."""
+    from constants import WORKING_TICKERS
+
+    # Test with first 3 working tickers
+    tickers = WORKING_TICKERS[:3]
 
     print("\n" + "=" * 60)
     print("CASABLANCA STOCK EXCHANGE DATA SCRAPER")
+    print(f"Testing {len(tickers)} sample tickers from {len(WORKING_TICKERS)} validated tickers")
     print("=" * 60 + "\n")
 
     for ticker in tickers:
@@ -180,6 +249,7 @@ def main():
             print(f"=" * 60)
 
         print()  # Add blank line between results
+        time.sleep(REQUEST_DELAY_SECONDS)  # Rate limiting
 
 
 if __name__ == "__main__":
